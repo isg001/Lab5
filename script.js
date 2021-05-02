@@ -16,6 +16,7 @@ let clear = document.getElementsByTagName("button")[1];
 let readText = document.getElementsByTagName("button")[2];
 let submit = document.getElementById('generate-meme');
 let voiceChoose = document.getElementById('voice-selection');
+var volume = document.getElementById('volume-group').querySelector('input');
 
 /**
  * Top and Bottom text
@@ -108,7 +109,7 @@ function populateVoiceList() {
   }
   
   voiceChoose.disabled = false;
-  let voices = speechSynthesis.getVoices();
+  var voices = speechSynthesis.getVoices();
 
   if (voices.length > 0){
     voiceChoose.removeChild(voiceChoose.getElementsByTagName('option')[0]);
@@ -133,29 +134,20 @@ if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !=
   speechSynthesis.onvoiceschanged = populateVoiceList;
 }
 
-readText.addEventListener('read', (ev) =>{
+readText.addEventListener('click', () =>{
   
-  ev.preventDefault();
-
-  let topUtter = new SpeechSynthesisUtterance(topText.value);
-  let bottomUtter = new SpeechSynthesisUtterance(bottomText.value);
+  let topUtter = topText.value;
+  let bottomUtter = bottomText.value;
+  let memeUtter = topUtter + bottomUtter;
 
   let voiceSelect = document.querySelector('#voice-selection').selectedIndex;
   const voices = speechSynthesis.getVoices();
   
-  let memeUtter = topUtter + bottomUtter;
   let utter = new SpeechSynthesisUtterance(memeUtter);
-  
-  let utterVol = document.getElementById('volume-group').querySelector('input');
-  utter.volume = utterVol.value/100;
+  utter.volume = volume.value/100;
   utter.voice = voices[voiceSelect];
-
-  speechSynthesis.speak(memeUtter);
+  speechSynthesis.speak(utter);
 });
-
-
-
-
 
 /**
  * Takes in the dimensions of the canvas and the new image, then calculates the new
