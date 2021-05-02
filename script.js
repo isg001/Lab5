@@ -2,15 +2,160 @@
 
 const img = new Image(); // used to load image from <input> and draw to canvas
 
+/**
+ * Canvas
+ */
+let canvas = document.getElementById('user-image');
+let context = canvas.getContext('2d');
+
+/**
+ * Buttons
+ */
+let generate = document.getElementsByTagName("button")[0];
+let clear = document.getElementsByTagName("button")[1];
+let readText = document.getElementsByTagName("button")[2];
+let submit = document.getElementById('generate-meme');
+let voiceChoose = document.getElementById('voice-selection');
+
+/**
+ * Top and Bottom text
+ */
+ let topText = document.getElementById('text-top');
+ let bottomText = document.getElementById('text-bottom');
+
 // Fires whenever the img object loads a new image (such as with img.src =)
 img.addEventListener('load', () => {
-  // TODO
+  /**
+   * HTML FILE:
+   * height = "400"
+   * width = "400"
+   */
 
-  // Some helpful tips:
-  // - Fill the whole Canvas with black first to add borders on non-square images, then draw on top
-  // - Clear the form when a new image is selected
-  // - If you draw the image to canvas here, it will update as soon as a new image is selected
+  /* Clear canvas context */
+  context.clearRect(0,0,canvas.width,canvas.height);
+
+  /** Fill the canvas context with black to add borders on non-square images
+   */
+  context.fillStyle='black';
+  context.fillRect(0,0,canvas.width,canvas.height);
+
+  /** draw the uploaded image onto the canvas with the correct width, height, leftmost
+   *  coordinate (startX), and topmost coordinate (startY) using generated 
+   * dimensions from the given function getDimensions 
+   * */
+  let imgDimensions = getDimmensions(canvas.width,canvas.height,img.width,img.height);
+  context.drawImage(img,imgDimensions.startX,imgDimensions.startY,imgDimensions.width,imgDimensions.height);
+
+  /* Toggle the relevant buttons (submit, clear, and read text buttons) 
+   * by disabling or enabling them as needed */
+  generate.disabled = false;
+  clear.disabled = true;
+  readText.disabled = true;
+
 });
+
+/** 
+ *  'change'
+ */
+let imageInput = document.getElementById("image-input");
+imageInput.addEventListener('change', () => {
+  img.src = URL.createObjectURL(imageInput.files[0]);
+});
+
+/** 
+ *  'submit'
+ */
+submit.addEventListener('submit', (ev) => {
+  
+  ev.preventDefault();
+  
+  context.font = "35px impact";
+  context.fillStyle = "white";
+  context.textAlign = "center";
+
+  context.fillText(topText.value, (canvas.width)/2, 35);
+  context.fillText(bottomText.value, (canvas.width)/2, 395);
+
+  generate.disabled = true;
+  clear.disabled = false;
+  readText.disabled = false;
+});
+
+/**
+ * 'click'
+ */
+clear.addEventListener('click', (ev) =>{
+  
+  ev.preventDefault();
+
+  context.clearRect(0,0,canvas.width,canvas.height);
+  img.src = '#';
+  topText.value='';
+  bottomText.value='';
+
+  generate.disabled = false;
+  clear.disabled = true;
+  readText.disabled = true;
+
+});
+
+/**
+ * Populate Voice List from reference
+ */
+function populateVoiceList() {
+  if(typeof speechSynthesis === 'undefined') {
+    return;
+  }
+  
+  voiceChoose.disabled = false;
+  let voices = speechSynthesis.getVoices();
+
+  if (voices.length > 0){
+    voiceChoose.removeChild(voiceChoose.getElementsByTagName('option')[0]);
+  }
+
+  for(var i = 0; i < voices.length; i++) {
+    var option = document.createElement('option');
+    option.textContent = voices[i].name + ' (' + voices[i].lang + ')';
+
+    if(voices[i].default) {
+      option.textContent += ' -- DEFAULT';
+    }
+
+    option.setAttribute('data-lang', voices[i].lang);
+    option.setAttribute('data-name', voices[i].name);
+    voiceChoose.appendChild(option);
+  }
+}
+
+populateVoiceList();
+if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
+  speechSynthesis.onvoiceschanged = populateVoiceList;
+}
+
+readText.addEventListener('read', (ev) =>{
+  
+  ev.preventDefault();
+
+  let topUtter = new SpeechSynthesisUtterance(topText.value);
+  let bottomUtter = new SpeechSynthesisUtterance(bottomText.value);
+
+  let voiceSelect = document.querySelector('#voice-selection').selectedIndex;
+  const voices = speechSynthesis.getVoices();
+  
+  let memeUtter = topUtter + bottomUtter;
+  let utter = new SpeechSynthesisUtterance(memeUtter);
+  
+  let utterVol = document.getElementById('volume-group').querySelector('input');
+  utter.volume = utterVol.value/100;
+  utter.voice = voices[voiceSelect];
+
+  speechSynthesis.speak(memeUtter);
+});
+
+
+
+
 
 /**
  * Takes in the dimensions of the canvas and the new image, then calculates the new
